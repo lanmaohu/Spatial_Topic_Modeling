@@ -1,0 +1,125 @@
+function [para, iterStat] = LDA(data, n_topic, penalty, outputDir, varargin)
+
+%% stats of input data---------------------------------------------------------------
+[n_user, n_doc] = size(data.user_tweet);
+n_location = length(data.location_coordinate);
+n_doc = length(data.tweet_user);
+
+fprintf('doc count: %d\n', n_doc);
+fprintf('user count: %d\n', n_user);
+fprintf('location count: %d\n', n_location);
+
+%% stats of input parameters
+fprintf('topic count: %d\n', n_topic);
+fprintf('penalty: %d\n', penalty);
+fprintf('penalty: %d\n', penalty);
+
+%% add utils
+addpath('./utils'); % utility functions
+
+%% init para
+[para] = initParameters(data, 'n_topic', n_topic);
+
+%% overwrite default data types
+for k = 1:2:length(varargin)
+    eval([varargin{k}, ' = varargin{', int2str(k + 1), '};']);
+end
+
+
+
+%% iteration stats
+iter = 0;
+loglik_threshold = 1e-4;
+maxiter = 500;
+loglikArray = [];
+loglik_old = -realmax;
+
+%% maximization options---------------------------------------------------------------
+addpath('../L1General'); % l1 regularization optimization lib
+optimFunc = @L1General2_PSSgb; %@L1GeneralIteratedRidge; % @L1GeneralCompositeGradientAccelerated;
+options.corrections = 10; % Number of corrections to store for L-BFGS methods
+options.optTol = 1e-4; % tolarance
+
+
+%% iteration.
+while iter <= maxiter
+    tic % whole iteration
+
+    %% e-step, sample latent variables.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %% precomputation. sum up all latent variable Ps.
+%     tic
+%     fprintf('sampling precomputation\n');
+    [sum_zu, log_exp_sum_u, log_alpha_zu, alpha_zu] = alphaForAllUser(para.Pz0, para.Pzu);
+    [sum_iz, log_exp_sum_z, log_delta_iz, delta_iz] = deltaForAllTopic(para.Pi0, para.Piz);
+%     toc
+
+    %sample region matrix : doc_region
+%     tic
+%     fprintf('sampling region\n');
+    doc_topic = sampleTopic(data.tweet_user, data.tweet_location_index, n_doc, n_topic, log_alpha_zu, alpha_zu, log_delta_iz, delta_iz);
+%     toc
+    
+    
+    %% precomputation, in order to get doc_region, doc_topic and tweet_user, tweet_location_index stats.
+%     tic
+%     fprintf('precomputation d(u,z), d(u), d(u,r), d(u), n(z,w), n(z), d(z,i), d(z)\n');
+    [n_doc_uz, n_doc_u] = countDocForUserAndTopic(n_user, n_topic, doc_topic, data.tweet_user);
+    [n_doc_zi, n_doc_z] = countDocForTopicAndLocation(n_topic, n_location, doc_topic, data.tweet_location_index);
+%     toc
+    
+    %% check out whether converged, and compute the log likelihood.
+%     tic
+%     fprintf('loglik\n');
+    loglik = logLikelihood(n_doc_uz, n_doc_u, n_doc_zi, n_doc_z, n_topic, n_user,...
+        para.Pz0, para.Pzu, para.Pi0, para.Piz, penalty);
+%     toc
+    
+    loglikArray = [loglikArray loglik];
+    fprintf('iteration: %d, %f, %f\n', iter, loglik, abs((loglik/loglik_old)-1));
+    
+    %stop the process depending on the increase of the log likelihood
+    if abs((loglik/loglik_old)-1) < loglik_threshold
+        break;
+    end
+    loglik_old = loglik;
+
+    
+    %% m-step, maximize log likelihood with respect to parameters.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %% update Pi0, Piz.
+    [para.Pi0, para.Piz] = updatePi(para.Pi0, para.Piz, n_topic, n_location, n_doc_zi, n_doc_z, optimFunc, options, penalty);
+
+	%% update Pz0, Pzu.
+    [para.Pz0, para.Pzu] = updatePz(para.Pz0, para.Pzu, n_user, n_topic, n_doc_uz, n_doc_u, optimFunc, options, penalty);
+
+    %% save the iteration.
+    name = [outputDir 'iter_'];
+    name = [name num2str(iter)];
+    save(strcat(outputDir, ''));
+    iter = iter + 1;
+    
+    toc % whole iteration
+end
+
+name = [outputDir 'iter_model'];
+save(name);
+
+
+
+
+
+
+
+
+
+
+
+
+
