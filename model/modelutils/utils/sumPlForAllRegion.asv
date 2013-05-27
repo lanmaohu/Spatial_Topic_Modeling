@@ -1,0 +1,12 @@
+function [f] = sumPlForAllRegion(mu, location_location)
+
+[n_location, n_dimension] = size(location_location);
+[n_dimension, n_region] = size(mu);
+
+f = zeros(n_location, n_region);
+for r = 1:n_region
+    for i = 1:n_location
+        [minus_i, norm_minus_i] = sumPlForARegion(mu, location_location, r)
+
+    end
+end

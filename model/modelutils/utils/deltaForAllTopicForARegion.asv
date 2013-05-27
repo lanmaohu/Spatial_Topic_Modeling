@@ -1,0 +1,36 @@
+function [sum_irz, log_exp_sum_rz, log_delta_irz, delta_irz] = deltaForAllTopicForARegion(Pi0, Piz, kernel, mu, location_location, r)
+
+%% prepare
+[n_location, n_topic] = size(Piz);
+
+%% precomputation
+sum_iz = sumPiForAllTopic(Pi0, Piz);
+sum_ir = sumPlForAllRegion(mu, location_location);
+
+for i = 1:n_location
+
+        for z = 1:n_topic
+            sum_irz(i,r,z) = sum_irz(i,r,z) + sum_iz(i,z) + (-kernel/2) * sum_ir(i,r);
+        end
+
+end
+
+log_exp_sum_rz = zeros(n_region, n_topic);
+exp_sum_iz = exp(sum_iz);
+exp_sum_ir = exp((-kernel/2) * sum_ir);
+for r = 1:n_region
+    for z = 1:n_topic
+        log_exp_sum_rz(r,z) = log(sum(exp_sum_iz(:,z) .* exp_sum_ir(:,r)));
+    end
+end
+
+%% log_delta_irz and delta_irz
+log_delta_irz = zeros(n_location, n_region, n_topic);
+for i = 1:n_location
+    for r = 1:n_region
+        for z = 1:n_topic
+            log_delta_irz(i,r,z) = sum_irz(i,r,z) - log_exp_sum_rz(r,z);
+        end
+    end    
+end
+delta_irz = exp(log_delta_irz);
