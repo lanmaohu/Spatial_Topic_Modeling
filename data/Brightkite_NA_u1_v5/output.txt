@@ -1,0 +1,18 @@
+0
+1000000
+attributes length is not equal to 5: 7573				
+attributes length is not equal to 5: 7573				
+attributes length is not equal to 5: 7573				
+attributes length is not equal to 5: 7573				
+2000000
+3000000
+attributes length is not equal to 5: 22819				
+attributes length is not equal to 5: 22819				
+4000000
+Total number of entries: 4747287
+Number of users: 34071
+Number of venues: 491573
+Number of checkins: 3019151
+Number of users: 18810
+Number of venues: 8066
+Number of checkins: 758392
