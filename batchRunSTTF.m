@@ -4,15 +4,15 @@ restoredefaultpath;
 
 %% add data
 dataPath = './data/';
-datasetName = 'Brightkite_NYC_u1_v5'; % Phoenix NYC Brightkite_NYC_u1_v5 Gowalla_NYC_u1_v5
+datasetName = 'Gowalla_NYC_u1_v5'; % Phoenix NYC Brightkite_NYC_u1_v5 Gowalla_NYC_u1_v5
 
 %% batch run
 modelName = 'sttf';
 addpath(strcat('./model/', modelName));
 % for training
 isTrain = true;
-n_topic_array = [20];
-n_region_array = [20];
+n_topic_array = [10];
+n_region_array = [5];
 n_time = 24;
 kernel = 100;
 penalty = 1;
